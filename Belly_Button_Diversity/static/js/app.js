@@ -2,28 +2,101 @@ function buildMetadata(sample) {
 
     // @TODO: Complete the following function that builds the metadata panel
   
-    // Use `d3.json` to fetch the metadata for a sample
-      // Use d3 to select the panel with id of `#sample-metadata`
+  // Use `d3.json` to fetch the metadata for a sample
+  d3.json(`/metadata/${sample}`).then( (metadata) => {
+    console.log(metadata)
+    // Use d3 to select the panel with id of `#sample-metadata`
+    var metadataCard = d3.select("#sample-metadata");
+
+    // Use `.html("")` to clear any existing metadata
+    metadataCard.html("");
+
+    // Use `Object.entries` to add each key and value pair to the card
+    for ([key, value] of Object.entries(metadata)) {
+      console.log(`${key}: ${value}`);
+
+      // append new 'p' element with text showing item of metadata
+      metadataCard.append("p").text(`${key}: ${value}`);
+    }
   
-      // Use `.html("") to clear any existing metadata
-  
-      // Use `Object.entries` to add each key and value pair to the panel
-      // Hint: Inside the loop, you will need to use d3 to append new
-      // tags for each key-value in the metadata.
-  
-      // BONUS: Build the Gauge Chart
-      // buildGauge(data.WFREQ);
-  }
+    // BONUS: Build the Gauge Chart
+    buildGauge(metadata.WFREQ);
+  });
+}
   
   function buildCharts(sample) {
   
-    // @TODO: Use `d3.json` to fetch the sample data for the plots
-  
-      // @TODO: Build a Bubble Chart using the sample data
-  
-      // @TODO: Build a Pie Chart
-      // HINT: You will need to use slice() to grab the top 10 sample_values,
-      // otu_ids, and labels (10 each).
+    // Use `d3.json` to fetch the sample data for the plots
+    d3.json(`/samples/${sample}`).then( (data) => {
+      console.log(data)
+      
+      // Build a Bubble Chart using the sample data
+      //-------------------------------------------
+      var traceBubble = {
+        type: 'scatter',
+        x: data.otu_ids,
+        y: data.sample_values,
+        mode: 'markers',
+        marker: {
+          opacity: 0.6,
+          size: data.sample_values,
+          color: data.otu_ids,
+          text: data.otu_labels
+        }
+      };
+
+      var dataBubble = [traceBubble];
+
+      var layoutBubble = {
+        title: '<b>Prevalence of Organisms</b>',
+        xaxis: {
+          title: 'OTU ID'
+        }
+      };
+
+      Plotly.newPlot('bubble', dataBubble, layoutBubble);
+
+      // Build a Pie Chart
+      // --------------------------
+      // Step one: convert data object into JSON
+      var newData = [];
+
+      for (i=0; i < data.otu_ids.length; i++) {
+        
+        // create temporary object storing id, label, and value
+        var tempObject = {
+          id: data.otu_ids[i],
+          label: data.otu_labels[i],
+          value: data.sample_values[i]
+        };
+        // push to newData
+        newData.push(tempObject);
+      }
+      console.log(newData);
+
+      // sort newData by sample values (descending)
+      newData.sort(function(a, b) {
+        return parseFloat(b.value) - parseFloat(a.value);
+      });
+      
+      // use slice() to grab the top 10
+      newData = newData.slice(0, 10);
+
+      var tracePie = {
+        type: 'pie',
+        labels: newData.map( row => row.id ),
+        values: newData.map( row => row.value ),
+        hovertext: newData.map( row => row.label )
+      };
+
+      var dataPie = [tracePie];
+
+      var layoutPie = {
+        title: "<b>Top 10 Organisms</b>",
+      };
+
+      Plotly.newPlot('pie', dataPie, layoutPie);
+    });
   }
   
   function init() {
