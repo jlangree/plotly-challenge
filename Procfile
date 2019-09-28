@@ -1,1 +1,1 @@
-web: plotly-challenge.app:app
+web: plotly-challenge/Belly_Button_Diversity.app:app
